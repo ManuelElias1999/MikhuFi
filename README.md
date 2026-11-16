@@ -1,27 +1,38 @@
 # MikhuFi
 
-MVP web de ahorro gamificado inspirado en fauna boliviana. El usuario crea una cuenta, recibe una wallet, carga fondos de prueba y acompaña a un animal durante todo su ciclo de vida.
+MVP web de ahorro gamificado inspirado en fauna boliviana. Cada animal representa una inversión independiente con su propio monto, plazo, rendimiento estimado y fecha de vencimiento.
 
 ## Flujo del MVP
 
 1. Registro con correo y nickname.
 2. Creación automática de una wallet Stellar de prueba.
-3. Carga de 10, 50 o 100 USDC de prueba.
-4. Elección entre un compañero gratuito aleatorio o el Gato Ticayo premium por 3 USDC.
-5. Tutorial del primer día.
-6. Activación opcional de una meta de ahorro de 30 días.
-7. Rutina diaria: alimentar gratis, explorar y terminar el día.
+3. Carga de fondos de prueba.
+4. Elección del monto y plazo: 1, 3, 6 o 12 meses.
+5. Elección de un Jukumari o una Llama incluidos, o un Gato Ticayo premium por 3 USDC.
+6. Cuidado gratuito del animal mientras avanza la inversión.
+7. Retiro del capital más el rendimiento estimado cuando vence el plazo.
+
+## Modelo de producto
+
+- Un animal equivale a una inversión.
+- Crear otra inversión crea otro animal; no modifica las anteriores.
+- Los plazos del MVP usan APY estimado de 4%, 5%, 6% y 7%.
+- Las cinco etapas de vida dependen del avance proporcional de cada plazo.
+- La comida proviene de la huerta y nunca descuenta USDC.
+- Tras siete días sin alimento, el animal pasa al memorial.
+- La muerte del animal nunca reduce ni elimina el capital.
+- Revivir es opcional y cuesta entre 0.10 y 1 USDC, pagados desde el saldo disponible.
+- El retiro anticipado no está habilitado en este MVP.
+- Al vencimiento se puede retirar capital más rendimiento estimado.
+- Las tasas son datos simulados del prototipo, no una promesa de rendimiento.
 
 ## Funciones
 
-- Jukumari y llama gratuitos.
-- Gato Ticayo premium con descuento sobre el saldo disponible.
-- Hasta seis animales activos a la vez.
-- Cinco etapas: bebé, joven, adulto, maduro y anciano.
-- Alimentación diaria gratuita, ánimo, salud, envejecimiento y muerte.
-- Huerta que repone comida según la cantidad de mascotas.
-- Memorial para los animales fallecidos.
-- Wallet, saldo, cargas y meta de ahorro para validar el flujo.
+- Varias inversiones y animales simultáneos.
+- Jukumari y Llama incluidos.
+- Gato Ticayo premium.
+- Wallet, cargas y saldos simulados.
+- Alimentación, exploración, salud, cinco etapas y memorial.
 - Persistencia local en el navegador.
 - Interfaz responsive con ilustraciones propias.
 - Sin Pollar, Trustless Work ni movimientos reales de dinero.
@@ -30,21 +41,22 @@ MVP web de ahorro gamificado inspirado en fauna boliviana. El usuario crea una c
 
 Requiere Node.js 18 o superior.
 
-```bash
+~~~bash
 git clone https://github.com/ManuelElias1999/MikhuFi.git
 cd MikhuFi
+npm install
 npm run dev
-```
+~~~
 
 Abre [http://localhost:4173](http://localhost:4173).
 
 ## Verificar
 
-```bash
+~~~bash
 npm run check
 npm test
-```
+~~~
 
-## Nota
+## Siguiente fase
 
-Esta versión valida la experiencia de producto y todavía no procesa dinero real. La autenticación, wallet real, contratos y pagos en Stellar corresponden a la siguiente fase.
+La autenticación real, wallet custodial o embebida, contratos, fuentes de rendimiento y pagos en Stellar se integrarán después de validar esta experiencia de producto.

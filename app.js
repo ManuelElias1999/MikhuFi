@@ -1,4 +1,4 @@
-import { SPECIES, STAGES, STORAGE_KEY, MAX_ACTIVE_PETS, createInitialState, adoptPet, feedPet, playWithPet, renamePet, advanceDay, getStage, getEstimatedYield, getPetMood, progressToNextStage } from "./game-engine.js";
+import { SPECIES, STAGES, STORAGE_KEY, MAX_ACTIVE_PETS, createInitialState, adoptPet, feedPet, playWithPet, renamePet, advanceDay, getStage, getEstimatedYield, getPetMood, progressToNextStage, registerUser, topUpWallet, activateSavings } from "./game-engine.js";
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
@@ -9,12 +9,12 @@ const icons = {
 };
 let state = load();
 let modal = null;
-let firstChoice = "jukumari";
+let selectedTopUp = 50;
 
 function load() {
   try {
     const value = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return value?.version === 1 ? value : createInitialState();
+    return value?.version === 2 ? value : createInitialState();
   } catch { return createInitialState(); }
 }
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -26,6 +26,7 @@ function message(text, tone = "success") {
   toast.textContent = text; toast.dataset.tone = tone; toast.classList.add("show");
   clearTimeout(message.timer); message.timer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
+function shortAddress(value) { return value ? `${value.slice(0, 6)}…${value.slice(-5)}` : "Sin wallet"; }
 function money(value, digits = 2) {
   return Number(value).toLocaleString("es-BO", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
@@ -53,11 +54,29 @@ function selectedPet() {
 }
 
 function summaries() {
-  const progress = Math.min(100, ((state.savings.currentDay - 1) / 30) * 100);
-  return `<div class="summary-grid"><article class="summary finance"><p><span>Meta en curso</span><b>DEMO</b></p><strong>${money(state.savings.principal)} <small>USDC</small></strong><em>Rendimiento simulado: +${money(getEstimatedYield(state.savings), 4)} USDC</em>${bar(progress)}<footer><span>Día ${state.savings.currentDay}</span><span>Meta: 30 días</span></footer></article><article class="summary garden"><div class="plant"><i></i><i></i><i></i></div><div><small>Huerta comunitaria</small><strong>${state.food} <em>raciones</em></strong><p>Produce ${Math.max(2, state.pets.length + 1)} raciones gratis cada día.</p></div></article></div>`;
+  const active = state.savings.status === "active";
+  const progress = active ? Math.min(100, ((state.savings.currentDay - 1) / 30) * 100) : 0;
+  return `<div class="summary-grid"><article class="summary finance"><p><span>Wallet personal</span><b>DEMO</b></p><strong>${money(state.wallet.balance)} <small>USDC</small></strong><em>${shortAddress(state.wallet.address)}</em>${active ? bar(progress) : '<div class="wallet-line"></div>'}<footer><span>${active ? `Meta activa: ${money(state.savings.principal)} USDC` : "Sin meta activa"}</span><button data-view="savings">Gestionar wallet →</button></footer></article><article class="summary garden"><div class="plant"><i></i><i></i><i></i></div><div><small>Huerta comunitaria</small><strong>${state.food} <em>raciones</em></strong><p>Produce ${Math.max(2, state.pets.length + 1)} raciones gratis cada día.</p></div></article></div>`;
+}
+function guideCard() {
+  const pet = state.pets.find((item) => item.id === state.selectedPetId) || state.pets[0];
+  const hasGoal = state.savings.status === "active";
+  const fed = Boolean(pet?.fedToday);
+  const played = Boolean(pet?.playedToday);
+  const complete = hasGoal && fed && played;
+  return `<article class="guide-card">
+    <div class="guide-head"><div><span>Tu ruta de hoy</span><h2>${complete ? "Todo listo por hoy" : "¿Qué hago ahora?"}</h2></div><b>${[hasGoal, fed, played].filter(Boolean).length}/3</b></div>
+    <p class="guide-copy">Tu dinero y tu compañero avanzan por separado. La comida es gratuita: cada día activa tu meta, alimenta a tu animal, explora y luego termina el día.</p>
+    <div class="guide-steps">
+      <div class="${hasGoal ? "done" : "current"}"><b>${hasGoal ? "✓" : "1"}</b><span><strong>Activa una meta</strong><small>Separa 50 USDC de tu wallet durante 30 días.</small></span>${hasGoal ? '<em>Activa</em>' : '<button data-activate="50">Activar 50 USDC</button>'}</div>
+      <div class="${fed ? "done" : hasGoal ? "current" : ""}"><b>${fed ? "✓" : "2"}</b><span><strong>Alimenta a tu compañero</strong><small>Usa una ración gratuita de la huerta.</small></span>${fed ? '<em>Listo</em>' : pet ? `<button data-feed="${pet.id}">Alimentar</button>` : ""}</div>
+      <div class="${played ? "done" : fed ? "current" : ""}"><b>${played ? "✓" : "3"}</b><span><strong>Sal a explorar</strong><small>Mejora su ánimo y descubre su personalidad.</small></span>${played ? '<em>Listo</em>' : pet ? `<button data-play="${pet.id}">Explorar</button>` : ""}</div>
+    </div>
+    ${complete ? '<button class="button dark guide-finish" data-next-day>Terminar el día y cosechar</button>' : ""}
+  </article>`;
 }
 function home() {
-  return `${summaries()}${heading("Compañero seleccionado", "Cuídalo sin gastar más", '<button class="button dark" data-next-day>Terminar el día</button>')}${selectedPet()}${heading(`${state.pets.length} de ${MAX_ACTIVE_PETS} espacios`, "Tu colección activa", '<button class="text-button" data-view="store">Adoptar otro →</button>')}<div class="pet-grid compact">${state.pets.map(petCard).join("")}</div><article class="activity">${heading("Últimos movimientos", "Diario del refugio")}<div>${state.activity.length ? state.activity.slice(0, 5).map((item) => `<p><span>D${item.day}</span>${clean(item.text)}</p>`).join("") : "<p>Tu historia apenas está comenzando.</p>"}</div></article>`;
+  return `${summaries()}${guideCard()}${heading("Compañero seleccionado", "Cuídalo sin gastar más", '<button class="button dark" data-next-day>Terminar el día</button>')}${selectedPet()}${heading(`${state.pets.length} de ${MAX_ACTIVE_PETS} espacios`, "Tu colección activa", '<button class="text-button" data-view="store">Adoptar otro →</button>')}<div class="pet-grid compact">${state.pets.map(petCard).join("")}</div><article class="activity">${heading("Últimos movimientos", "Diario del refugio")}<div>${state.activity.length ? state.activity.slice(0, 5).map((item) => `<p><span>D${item.day}</span>${clean(item.text)}</p>`).join("") : "<p>Tu historia apenas está comenzando.</p>"}</div></article>`;
 }
 function companions() {
   return `<div class="intro"><div><span>Hasta seis a la vez</span><h2>Cada compañero tiene su propio ciclo</h2></div><p>Alimentar y jugar no descuenta USDC. Cada animal envejece, necesita cuidado y deja un recuerdo al terminar su vida.</p></div><div class="pet-grid">${state.pets.length ? state.pets.map(petCard).join("") : empty("Todavía no tienes compañeros", "El jukumari y la llama son gratuitos.")}</div>${state.pets.length ? heading("Gestión diaria", "Compañero seleccionado", '<button class="button dark" data-next-day>Terminar el día</button>') + selectedPet() : ""}`;
@@ -67,8 +86,12 @@ function store() {
   return `<div class="intro"><div><span>Fauna de Bolivia</span><h2>Forma tu propio refugio</h2></div><p>Puedes tener varias mascotas. Los animales gratuitos no exigen compras posteriores; el Gato Ticayo es opcional.</p></div><div class="shop-grid">${Object.values(SPECIES).map(card).join("")}</div><div class="notice"><b>Compra simulada</b><p>El flujo de 3 USDC todavía no conecta una wallet ni mueve dinero real.</p></div>`;
 }
 function savings() {
-  const progress = Math.min(100, ((state.savings.currentDay - 1) / 30) * 100);
-  return `<div class="intro"><div><span>Experiencia demostrativa</span><h2>Una meta simple y comprensible</h2></div><p>Esta versión valida el hábito y el juego. No recibe depósitos reales ni promete rendimientos.</p></div><div class="saving-grid"><article class="saving-hero"><small>Ahorro simulado</small><strong>${money(state.savings.principal)} <em>USDC</em></strong><p>Meta de 30 días</p>${bar(progress)}<div><p><span>Día actual</span><b>${state.savings.currentDay}</b></p><p><span>Tasa ilustrativa</span><b>7% anual</b></p><p><span>Generado</span><b>+${money(getEstimatedYield(state.savings), 4)}</b></p></div></article><article class="rules"><span>Reglas del MVP</span><h3>El ahorro y el juego están separados</h3><ul><li>Alimentar y explorar no consumen USDC.</li><li>La huerta entrega raciones gratuitas.</li><li>El Gato Ticayo es la única compra opcional.</li><li>Todos los valores financieros son simulados.</li></ul></article></div><article class="timeline"><span>Ciclo de vida</span><h3>Las cinco etapas</h3><div>${STAGES.map((item, i) => `<p><span>0${i + 1}</span><b>${item.label}</b><small>Días ${item.minDay}–${item.maxDay}</small></p>`).join("")}</div></article>`;
+  const active = state.savings.status === "active";
+  const progress = active ? Math.min(100, ((state.savings.currentDay - 1) / 30) * 100) : 0;
+  return `<div class="intro"><div><span>Wallet creada para ${clean(state.profile.nickname)}</span><h2>Fondos, meta y progreso</h2></div><p>La wallet y los movimientos son simulados en este MVP. La siguiente fase los conectará con Stellar.</p></div>
+    <div class="wallet-panel"><div><span>Saldo disponible</span><strong>${money(state.wallet.balance)} <small>USDC</small></strong><p>${shortAddress(state.wallet.address)}</p></div><div class="fund-actions"><span>Cargar fondos demo</span><button data-wallet-topup="10">+10</button><button data-wallet-topup="50">+50</button><button data-wallet-topup="100">+100</button></div></div>
+    <div class="saving-grid"><article class="saving-hero"><small>${active ? "Meta de ahorro activa" : "Todavía no activaste una meta"}</small><strong>${money(state.savings.principal)} <em>USDC</em></strong><p>${active ? "Meta de 30 días" : "Elige cuánto separar de tu wallet"}</p>${bar(progress)}<div><p><span>Día actual</span><b>${active ? state.savings.currentDay : "—"}</b></p><p><span>Tasa ilustrativa</span><b>${active ? "7% anual" : "—"}</b></p><p><span>Generado</span><b>+${money(getEstimatedYield(state.savings), 4)}</b></p></div>${active ? "" : '<button class="button gold-action" data-activate="50">Activar meta con 50 USDC</button>'}</article><article class="rules"><span>Cómo funciona</span><h3>El dinero no se usa para alimentar</h3><ul><li>Cargas USDC en tu wallet.</li><li>Separas 50 USDC para una meta de 30 días.</li><li>La huerta produce comida gratuita.</li><li>El Gato Ticayo cuesta 3 USDC y es opcional.</li></ul></article></div>
+    <article class="timeline"><span>Ciclo de vida</span><h3>Las cinco etapas</h3><div>${STAGES.map((item, i) => `<p><span>0${i + 1}</span><b>${item.label}</b><small>Días ${item.minDay}–${item.maxDay}</small></p>`).join("")}</div></article>`;
 }
 function memorial() {
   return `<div class="intro"><div><span>Recuerdos permanentes</span><h2>Cada vida deja una historia</h2></div><p>Los animales fallecidos conservan su nombre, especie, edad y motivo de partida.</p></div><div class="memorial-grid">${state.memorial.length ? state.memorial.map((pet) => `<article>${art(pet.speciesId, "old", true)}<span>${clean(pet.speciesName)}</span><h3>${clean(pet.name)}</h3><p>Vivió ${pet.ageDays} días · ${clean(pet.deathCause)}</p></article>`).join("") : empty("El memorial está vacío", "Aquí aparecerán los compañeros que completen su ciclo de vida.")}</div>`;
@@ -79,8 +102,9 @@ function sidebar() {
   return `<aside id="sidebar"><div class="brand"><b>M</b><div><strong>MikhuFi</strong><small>Alimenta tu futuro</small></div></div><nav>${links.map(([id,label,icon]) => `<button class="${state.view === id ? "active" : ""}" data-view="${id}"><span>${icon}</span>${label}</button>`).join("")}</nav><footer><p>${mark()} Creado en Bolivia</p><button data-reset>Reiniciar demo</button></footer></aside>`;
 }
 function topbar() {
-  const titles = { home:"Tu refugio", companions:"Mis compañeros", store:"Adopta un compañero", savings:"Mi meta de ahorro", memorial:"Memorial" };
-  return `<header class="topbar"><button data-menu>☰</button><div><span>Día ${state.savings.currentDay} de la experiencia</span><h1>${titles[state.view]}</h1></div><section><p>Raciones <b>${state.food}</b></p><i>ME</i></section></header>`;
+  const titles = { home:"Tu refugio", companions:"Mis compañeros", store:"Adopta un compañero", savings:"Wallet y meta", memorial:"Memorial" };
+  const initials = (state.profile.nickname || "MF").slice(0, 2).toUpperCase();
+  return `<header class="topbar"><button data-menu>☰</button><div><span>Hola, ${clean(state.profile.nickname)} · Día ${state.savings.currentDay}</span><h1>${titles[state.view]}</h1></div><section><p>Wallet <b>${money(state.wallet.balance)} USDC</b></p><i>${clean(initials)}</i></section></header>`;
 }
 function modalHTML() {
   if (!modal) return "";
@@ -89,8 +113,20 @@ function modalHTML() {
   return `<div class="modal-bg" data-close><article class="modal small" onclick="event.stopPropagation()"><button data-close>×</button><span>Personaliza tu compañero</span><h2>Cambiar nombre</h2><label>Nombre<input id="pet-name" maxlength="18" value="${clean(pet?.name)}"></label><footer><button class="button light" data-close>Cancelar</button><button class="button dark" data-save-name="${modal.petId}">Guardar</button></footer></article></div>`;
 }
 function onboarding() {
-  const species = SPECIES[firstChoice];
-  return `<main class="onboarding"><section><div class="brand"><b>M</b><div><strong>MikhuFi</strong><small>Alimenta tu futuro</small></div></div><span>MVP creado en Bolivia ${mark()}</span><h1>Haz crecer tu ahorro.<br>Cuida algo que cobra vida.</h1><p>Inicia una meta simulada de 50 USDC y adopta un compañero boliviano. Alimentarlo y jugar será gratis.</p><div class="steps"><p><b>01</b><span><strong>Una meta clara</strong>50 USDC durante 30 días.</span></p><p><b>02</b><span><strong>Sin micropagos</strong>Comida gratis de la huerta.</span></p><p><b>03</b><span><strong>Una vida completa</strong>Cinco etapas y memorial.</span></p></div></section><section class="picker"><span>Paso 1 de 1</span><h2>Elige tu primer compañero</h2><p>Los dos son gratuitos.</p><div class="choices">${["jukumari","llama"].map((id) => `<button class="${firstChoice === id ? "active" : ""}" data-choice="${id}">${SPECIES[id].name}</button>`).join("")}</div><div class="chosen">${art(firstChoice)}<div><span>${species.habitat}</span><h3>${species.name}</h3><p>${species.description}</p></div></div><button class="button dark large" data-start>Comenzar con ${species.name}</button><small>Demo: no se depositan fondos reales.</small></section></main>`;
+  const step = state.onboardingStep || 1;
+  const progress = step * 25;
+  let body = "";
+  if (step === 1) {
+    body = `<span>Paso 1 de 4</span><h2>Crea tu cuenta</h2><p>Usaremos tu correo para entrar y tu nickname dentro del refugio.</p><label>Correo<input id="signup-email" type="email" placeholder="tu@correo.com" autocomplete="email"></label><label>Nickname<input id="signup-nickname" maxlength="18" placeholder="¿Cómo quieres llamarte?" autocomplete="nickname"></label><button class="button dark large" data-register>Crear cuenta y wallet</button>`;
+  } else if (step === 2) {
+    body = `<span>Paso 2 de 4</span><h2>Tu wallet está lista</h2><p>Esta dirección es simulada para probar la experiencia completa.</p><div class="wallet-created"><small>Stellar wallet</small><strong>${shortAddress(state.wallet.address)}</strong><button data-copy-wallet>Copiar dirección</button></div><h3>¿Cuánto quieres cargar?</h3><div class="amounts">${[10,50,100].map((value) => `<button class="${selectedTopUp === value ? "active" : ""}" data-topup-choice="${value}">${value} USDC</button>`).join("")}</div><button class="button dark large" data-topup>Cargar ${selectedTopUp} USDC demo</button>`;
+  } else if (step === 3) {
+    body = `<span>Paso 3 de 4</span><h2>Consigue tu primer compañero</h2><p>Puedes recibir uno gratuito al azar o comprar el Gato Ticayo. Saldo: <b>${money(state.wallet.balance)} USDC</b>.</p><div class="avatar-options"><article><div class="dual-art">${art("jukumari")}${art("llama")}</div><small>Opción gratuita</small><h3>Compañero sorpresa</h3><p>Puede salir un Jukumari o una Llama. No consume tu saldo.</p><button class="button light" data-random-pet>Descubrir gratis</button></article><article class="premium">${art("ticayo")}<small>Opción premium</small><h3>Gato Ticayo</h3><p>Elígelo directamente por 3 USDC.</p><button class="button dark" data-onboard-buy>Comprar por 3 USDC</button></article></div>`;
+  } else {
+    const pet = state.pets[0];
+    body = `<span>Paso 4 de 4</span><h2>Ya puedes comenzar, ${clean(state.profile.nickname)}</h2><p>Tu primer compañero es <b>${clean(pet?.name)}</b>. Esto es lo que harás cada día:</p><div class="first-guide"><p><b>1</b><span><strong>Activa una meta</strong>Separa 50 USDC de tu wallet para 30 días.</span></p><p><b>2</b><span><strong>Recoge y sirve comida</strong>La huerta crea raciones gratis.</span></p><p><b>3</b><span><strong>Explora y termina el día</strong>Su ánimo, edad y etapa evolucionarán.</span></p></div><div class="life-warning"><b>Importante</b><p>Si no lo cuidas, perderá salud y puede morir. Al día 36 completará su ciclo y pasará al memorial.</p></div><button class="button dark large" data-finish-onboarding>Entrar a mi refugio</button>`;
+  }
+  return `<main class="onboarding"><section><div class="brand"><b>M</b><div><strong>MikhuFi</strong><small>Alimenta tu futuro</small></div></div><span>MVP creado en Bolivia ${mark()}</span><h1>Ahorra mientras cuidas algo que cobra vida.</h1><p>Crea tu wallet, carga fondos y acompaña a un animal boliviano durante toda su vida.</p><div class="onboarding-map"><i style="width:${progress}%"></i></div><div class="map-labels"><span>Cuenta</span><span>Wallet</span><span>Compañero</span><span>Tutorial</span></div></section><section class="picker">${body}<small>Demo: el registro, la wallet y los fondos todavía no son reales.</small></section></main>`;
 }
 function currentView() {
   return state.view === "companions" ? companions() : state.view === "store" ? store() : state.view === "savings" ? savings() : state.view === "memorial" ? memorial() : home();
@@ -108,12 +144,29 @@ function run(result) {
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button, [data-close]");
   if (!button) return;
-  if (button.dataset.choice) { firstChoice = button.dataset.choice; render(); }
-  else if (button.hasAttribute("data-start")) { const fresh = createInitialState(); fresh.onboarded = true; setState(adoptPet(fresh, firstChoice).state); message("Tu refugio está listo."); }
-  else if (button.dataset.view) { state.view = button.dataset.view; save(); render(); }
+  if (button.hasAttribute("data-register")) {
+    run(registerUser(state, document.querySelector("#signup-email")?.value, document.querySelector("#signup-nickname")?.value));
+  } else if (button.dataset.topupChoice) {
+    selectedTopUp = Number(button.dataset.topupChoice); render();
+  } else if (button.hasAttribute("data-topup")) {
+    run(topUpWallet(state, selectedTopUp));
+  } else if (button.hasAttribute("data-copy-wallet")) {
+    navigator.clipboard?.writeText(state.wallet.address); message("Dirección copiada.");
+  } else if (button.hasAttribute("data-random-pet")) {
+    const speciesId = Math.random() < 0.5 ? "jukumari" : "llama";
+    const result = adoptPet(state, speciesId);
+    if (result.ok) { result.state.onboardingStep = 4; setState(result.state); message(`¡Descubriste un ${SPECIES[speciesId].name}!`); }
+  } else if (button.hasAttribute("data-onboard-buy")) {
+    const result = adoptPet(state, "ticayo", {premiumConfirmed:true});
+    if (result.ok) { result.state.onboardingStep = 4; setState(result.state); message("Gato Ticayo desbloqueado."); } else message(result.message, "danger");
+  } else if (button.hasAttribute("data-finish-onboarding")) {
+    state.onboarded = true; state.view = "home"; save(); render();
+  } else if (button.dataset.view) { state.view = button.dataset.view; save(); render(); }
   else if (button.dataset.select) { state.selectedPetId = button.dataset.select; save(); render(); }
   else if (button.dataset.adopt) { SPECIES[button.dataset.adopt].price ? (modal = {type:"buy"}, render()) : run(adoptPet(state, button.dataset.adopt)); }
   else if (button.hasAttribute("data-buy")) { modal = null; run(adoptPet(state, "ticayo", {premiumConfirmed:true})); }
+  else if (button.dataset.walletTopup) run(topUpWallet(state, Number(button.dataset.walletTopup)));
+  else if (button.dataset.activate) run(activateSavings(state, Number(button.dataset.activate)));
   else if (button.dataset.feed) run(feedPet(state, button.dataset.feed));
   else if (button.dataset.play) run(playWithPet(state, button.dataset.play));
   else if (button.hasAttribute("data-next-day")) { const result = advanceDay(state); setState(result.state); message(result.departed.length ? `${result.departed.join(", ")} pasó al memorial.` : `Cosechaste ${result.harvest} raciones.`, result.departed.length ? "gentle" : "success"); }

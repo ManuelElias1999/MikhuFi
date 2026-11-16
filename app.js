@@ -2,7 +2,11 @@ import { SPECIES, STAGES, STORAGE_KEY, MAX_ACTIVE_PETS, createInitialState, adop
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
-const icons = {\n  jukumari: '<img src="assets/jukumari.svg" alt="">',\n  llama: '<img src="assets/llama.svg" alt="">',\n  ticayo: '<img src="assets/ticayo.svg" alt="">'\n};
+const icons = {
+  jukumari: '<img src="assets/jukumari.svg" alt="">',
+  llama: '<img src="assets/llama.svg" alt="">',
+  ticayo: '<img src="assets/ticayo.svg" alt="">'
+};
 let state = load();
 let modal = null;
 let firstChoice = "jukumari";

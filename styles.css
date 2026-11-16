@@ -263,3 +263,7 @@ button { cursor: pointer; }
   .saving-hero > div:last-child { grid-template-columns: 1fr; }
   .modal footer { grid-template-columns: 1fr; }
 }
+
+.animal > b { width: 156px; height: 156px; display: grid; place-items: center; }
+.animal > b img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pet-card .animal > b { width: 104px; height: 104px; }

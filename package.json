@@ -1,0 +1,15 @@
+{
+  "name": "mikhufi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MVP de ahorro gamificado con fauna boliviana",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

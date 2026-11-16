@@ -267,3 +267,415 @@ button { cursor: pointer; }
 .animal > b { width: 156px; height: 156px; display: grid; place-items: center; }
 .animal > b img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pet-card .animal > b { width: 104px; height: 104px; }
+
+/* Account, wallet and first-day flow */
+.picker > label,
+.modal label {
+  display: grid;
+  gap: 7px;
+  margin: 15px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.picker input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.onboarding-map {
+  width: min(520px, 100%);
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.1);
+  margin-top: 42px;
+  overflow: hidden;
+}
+.onboarding-map i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #e3bd6d;
+  transition: width .35s;
+}
+.map-labels {
+  width: min(520px, 100%);
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.map-labels span {
+  color: #93a69a;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.wallet-created {
+  margin: 22px 0 26px;
+  border-radius: 17px;
+  padding: 20px;
+  background: var(--green-dark);
+  color: white;
+  display: grid;
+  gap: 8px;
+}
+.wallet-created small {
+  color: #acc0b3;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 9px;
+}
+.wallet-created strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+}
+.wallet-created button {
+  width: max-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #e3bd6d;
+  font-size: 10px;
+  font-weight: 800;
+}
+.picker > h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.amounts {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.amounts button {
+  min-height: 45px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--paper);
+  font-weight: 800;
+  font-size: 12px;
+}
+.amounts button.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-soft);
+}
+.avatar-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+  margin: 19px 0 10px;
+}
+.avatar-options article {
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  background: var(--paper);
+  padding: 14px;
+  text-align: center;
+}
+.avatar-options article.premium {
+  border-color: #d8b46d;
+  background: #fffaf0;
+}
+.avatar-options .animal {
+  width: 100%;
+  height: 130px;
+}
+.avatar-options .animal > i {
+  width: 100px;
+  height: 100px;
+}
+.avatar-options .animal > b {
+  width: 90px;
+  height: 90px;
+}
+.avatar-options article > small {
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: 8px;
+  font-weight: 900;
+}
+.avatar-options article h3 {
+  margin: 6px 0;
+  font-size: 16px;
+}
+.avatar-options article p {
+  min-height: 48px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.avatar-options .button {
+  width: 100%;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.dual-art {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.dual-art .animal {
+  width: 100%;
+}
+.dual-art .animal > i {
+  width: 73px;
+  height: 73px;
+}
+.dual-art .animal > b {
+  width: 69px;
+  height: 69px;
+}
+.first-guide {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 15px;
+}
+.first-guide p {
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  gap: 12px;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+}
+.first-guide p > b {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 11px;
+}
+.first-guide span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.first-guide strong {
+  display: block;
+  color: var(--ink);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.life-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  background: #f8e9e3;
+  color: #744334;
+}
+.life-warning b {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.life-warning p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.guide-card {
+  margin-top: 18px;
+  padding: 25px;
+  border-radius: 21px;
+  border: 1px solid #cfdbd2;
+  background: linear-gradient(135deg,#f7fbf8,#edf4ef);
+}
+.guide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.guide-head span {
+  color: var(--green);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .11em;
+  font-weight: 900;
+}
+.guide-head h2 {
+  margin: 5px 0 0;
+  font-size: 21px;
+}
+.guide-head > b {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--green-dark);
+  color: white;
+  font-size: 12px;
+}
+.guide-copy {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 13px 0 18px;
+}
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 10px;
+}
+.guide-steps > div {
+  min-height: 132px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 31px 1fr;
+  gap: 10px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.guide-steps > div > b {
+  width: 29px;
+  height: 29px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #ecefe9;
+  color: var(--muted);
+  font-size: 10px;
+}
+.guide-steps > div.current {
+  border-color: #90ac99;
+  box-shadow: inset 0 0 0 1px #90ac99;
+}
+.guide-steps > div.current > b,
+.guide-steps > div.done > b {
+  background: var(--green);
+  color: white;
+}
+.guide-steps span strong {
+  display: block;
+  font-size: 11px;
+  margin: 2px 0 5px;
+}
+.guide-steps span small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.guide-steps button,
+.guide-steps em {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 31px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--green-dark);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  font-style: normal;
+  display: grid;
+  place-items: center;
+}
+.guide-steps em {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.guide-finish {
+  margin-top: 13px;
+  width: 100%;
+}
+.wallet-line {
+  height: 7px;
+  border-radius: 99px;
+  background: #edf0eb;
+}
+.finance footer button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 800;
+}
+.wallet-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  padding: 24px 27px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  color: white;
+  background: var(--green-dark);
+}
+.wallet-panel > div:first-child > span,
+.fund-actions > span {
+  display: block;
+  color: #b9c8bf;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 800;
+}
+.wallet-panel strong {
+  display: block;
+  margin: 8px 0 5px;
+  font-size: 30px;
+}
+.wallet-panel strong small {
+  font-size: 12px;
+  color: #b9c8bf;
+}
+.wallet-panel p {
+  margin: 0;
+  color: #b9c8bf;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+}
+.fund-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.fund-actions > span {
+  margin-right: 6px;
+}
+.fund-actions button {
+  min-height: 37px;
+  padding: 0 11px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 9px;
+  background: rgba(255,255,255,.08);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+}
+.gold-action {
+  width: 100%;
+  margin-top: 22px;
+  background: #e6be6a;
+  color: var(--green-dark);
+}
+@media (max-width: 820px) {
+  .guide-steps { grid-template-columns: 1fr; }
+  .guide-steps > div { min-height: auto; }
+  .wallet-panel { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 560px) {
+  .avatar-options { grid-template-columns: 1fr; }
+  .avatar-options article p { min-height: auto; }
+  .fund-actions { width: 100%; flex-wrap: wrap; }
+  .fund-actions > span { width: 100%; }
+  .map-labels span { font-size: 7px; }
+}

@@ -4,15 +4,18 @@ import {
   createInitialState,
   registerUser,
   topUpWallet,
-  activateSavings,
-  adoptPet,
+  setPendingGoal,
+  createPosition,
   feedPet,
   advanceDay,
+  revivePet,
+  withdrawPosition,
   getStage,
-  LIFE_EXPECTANCY_DAYS
+  getProjectedYield,
+  getRevivalCost
 } from "./game-engine.js";
 
-function fundedState(amount = 100) {
+function fundedState(amount = 250) {
   const registered = registerUser(createInitialState(), "manu@example.com", "Manu");
   assert.equal(registered.ok, true);
   const funded = topUpWallet(registered.state, amount);
@@ -20,76 +23,111 @@ function fundedState(amount = 100) {
   return funded.state;
 }
 
-test("el registro crea un perfil y una wallet", () => {
+function position(state, amount = 50, months = 1, speciesId = "jukumari") {
+  return createPosition(state, {
+    amount: amount,
+    months: months,
+    speciesId: speciesId,
+    premiumConfirmed: speciesId === "ticayo"
+  });
+}
+
+test("el registro crea perfil, wallet y estado v3", function () {
   const result = registerUser(createInitialState(), "manu@example.com", "Manu");
   assert.equal(result.ok, true);
-  assert.equal(result.state.version, 2);
+  assert.equal(result.state.version, 3);
   assert.equal(result.state.profile.nickname, "Manu");
   assert.match(result.state.wallet.address, /^G[A-Z2-7]{55}$/);
   assert.equal(result.state.onboardingStep, 2);
 });
 
-test("la wallet se puede cargar y activar una meta", () => {
+test("el usuario define monto y plazo antes de elegir animal", function () {
   const state = fundedState(100);
-  assert.equal(state.wallet.balance, 100);
-  const goal = activateSavings(state, 50);
+  const goal = setPendingGoal(state, 50, 3);
   assert.equal(goal.ok, true);
-  assert.equal(goal.state.wallet.balance, 50);
-  assert.equal(goal.state.savings.principal, 50);
-  assert.equal(goal.state.savings.status, "active");
+  assert.deepEqual(goal.state.pendingGoal, { amount: 50, months: 3 });
+  assert.equal(goal.state.onboardingStep, 4);
+  assert.ok(getProjectedYield(50, 3) > 0);
 });
 
-test("las cinco etapas aparecen en los días definidos", () => {
-  assert.equal(getStage(0).label, "Bebé");
-  assert.equal(getStage(4).label, "Joven");
-  assert.equal(getStage(9).label, "Adulto");
-  assert.equal(getStage(16).label, "Maduro");
-  assert.equal(getStage(25).label, "Anciano");
+test("cada animal crea una inversión independiente", function () {
+  const first = position(fundedState(250), 50, 1, "jukumari");
+  const second = position(first.state, 100, 6, "llama");
+  assert.equal(second.ok, true);
+  assert.equal(second.state.positions.length, 2);
+  assert.equal(second.state.pets.length, 2);
+  assert.equal(second.state.wallet.balance, 100);
+  assert.equal(second.state.positions[0].principal, 50);
+  assert.equal(second.state.positions[0].months, 1);
+  assert.equal(second.state.positions[1].principal, 100);
+  assert.equal(second.state.positions[1].months, 6);
+  assert.notEqual(second.state.positions[0].id, second.state.positions[1].id);
 });
 
-test("jukumari y llama se adoptan gratis", () => {
-  const initial = fundedState();
-  const bear = adoptPet(initial, "jukumari");
-  assert.equal(bear.ok, true);
-  const llama = adoptPet(bear.state, "llama");
-  assert.equal(llama.ok, true);
-  assert.equal(llama.state.pets.length, 2);
-  assert.equal(llama.state.wallet.balance, 100);
+test("el Gato Ticayo cobra 3 USDC además de la inversión", function () {
+  const result = position(fundedState(100), 50, 1, "ticayo");
+  assert.equal(result.ok, true);
+  assert.equal(result.state.wallet.balance, 47);
+  assert.equal(result.state.premiumPurchases, 1);
+  assert.equal(result.state.positions[0].principal, 50);
 });
 
-test("el Gato Ticayo exige confirmación y descuenta 3 USDC", () => {
-  const initial = fundedState(50);
-  const denied = adoptPet(initial, "ticayo");
-  assert.equal(denied.ok, false);
-  const accepted = adoptPet(initial, "ticayo", { premiumConfirmed: true });
-  assert.equal(accepted.ok, true);
-  assert.equal(accepted.state.premiumPurchases, 1);
-  assert.equal(accepted.state.wallet.balance, 47);
+test("las cinco etapas dependen del avance proporcional del plazo", function () {
+  assert.equal(getStage(0, 100).label, "Bebé");
+  assert.equal(getStage(10, 100).label, "Joven");
+  assert.equal(getStage(30, 100).label, "Adulto");
+  assert.equal(getStage(60, 100).label, "Maduro");
+  assert.equal(getStage(85, 100).label, "Anciano");
 });
 
-test("no se puede comprar el Gato Ticayo sin saldo", () => {
-  const registered = registerUser(createInitialState(), "manu@example.com", "Manu");
-  const result = adoptPet(registered.state, "ticayo", { premiumConfirmed: true });
-  assert.equal(result.ok, false);
-  assert.match(result.message, /3 USDC/);
-});
-
-test("alimentar usa una ración y nunca el ahorro", () => {
-  const initial = fundedState();
-  const adopted = adoptPet(initial, "jukumari");
-  const goal = activateSavings(adopted.state, 50);
-  const before = goal.state.savings.principal;
-  const fed = feedPet(goal.state, adopted.pet.id);
+test("alimentar es gratis y no toca el capital", function () {
+  const created = position(fundedState(100), 50, 1, "jukumari");
+  const principal = created.state.positions[0].principal;
+  const wallet = created.state.wallet.balance;
+  const fed = feedPet(created.state, created.pet.id);
   assert.equal(fed.ok, true);
-  assert.equal(fed.state.food, goal.state.food - 1);
-  assert.equal(fed.state.savings.principal, before);
+  assert.equal(fed.state.food, created.state.food - 1);
+  assert.equal(fed.state.positions[0].principal, principal);
+  assert.equal(fed.state.wallet.balance, wallet);
 });
 
-test("al completar su vida pasa al memorial", () => {
-  const adopted = adoptPet(fundedState(), "llama");
-  adopted.state.pets[0].ageDays = LIFE_EXPECTANCY_DAYS;
-  const next = advanceDay(adopted.state);
-  assert.equal(next.state.pets.length, 0);
-  assert.equal(next.state.memorial.length, 1);
-  assert.match(next.state.memorial[0].deathCause, /ciclo de vida/);
+test("tras siete días sin comida el animal muere pero el capital sigue intacto", function () {
+  let current = position(fundedState(100), 50, 1, "llama").state;
+  for (let day = 0; day < 7; day += 1) {
+    current = advanceDay(current).state;
+  }
+  assert.equal(current.pets.length, 0);
+  assert.equal(current.memorial.length, 1);
+  assert.equal(current.positions[0].principal, 50);
+  assert.equal(current.positions[0].status, "locked");
+  assert.match(current.memorial[0].deathCause, /siete días/);
+});
+
+test("revivir cobra del saldo disponible y nunca del capital", function () {
+  let current = position(fundedState(100), 50, 1, "jukumari").state;
+  for (let day = 0; day < 7; day += 1) {
+    current = advanceDay(current).state;
+  }
+  const principal = current.positions[0].principal;
+  const wallet = current.wallet.balance;
+  const cost = getRevivalCost(current.positions[0]);
+  const revived = revivePet(current, current.memorial[0].id);
+  assert.equal(revived.ok, true);
+  assert.equal(revived.state.positions[0].principal, principal);
+  assert.equal(revived.state.wallet.balance, Number((wallet - cost).toFixed(2)));
+  assert.equal(revived.state.pets.length, 1);
+  assert.equal(revived.state.memorial.length, 0);
+});
+
+test("al vencer se desbloquea y puede retirarse capital más rendimiento", function () {
+  let current = position(fundedState(100), 50, 1, "jukumari").state;
+  for (let day = 0; day < 30; day += 1) {
+    current = advanceDay(current).state;
+  }
+  assert.equal(current.positions[0].status, "matured");
+  const before = current.wallet.balance;
+  const withdrawn = withdrawPosition(current, current.positions[0].id);
+  assert.equal(withdrawn.ok, true);
+  assert.equal(withdrawn.state.positions[0].status, "withdrawn");
+  assert.ok(withdrawn.state.wallet.balance > before + 50);
 });

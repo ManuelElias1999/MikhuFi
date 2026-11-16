@@ -44,7 +44,7 @@ export const STAGES = [
 
 export const MAX_ACTIVE_PETS = 6;
 export const LIFE_EXPECTANCY_DAYS = 35;
-export const STORAGE_KEY = "mikhufi-mvp-v1";
+export const STORAGE_KEY = "mikhufi-mvp-v2";
 
 export function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
@@ -57,15 +57,25 @@ export function getStage(ageDays) {
 
 export function createInitialState() {
   return {
-    version: 1,
+    version: 2,
     onboarded: false,
+    onboardingStep: 1,
     view: "home",
+    profile: {
+      email: "",
+      nickname: ""
+    },
+    wallet: {
+      address: "",
+      balance: 0,
+      network: "Stellar Testnet (simulada)"
+    },
     savings: {
-      principal: 50,
+      principal: 0,
       durationDays: 30,
       currentDay: 1,
       annualRate: 0.07,
-      status: "demo"
+      status: "inactive"
     },
     food: 3,
     pets: [],
@@ -74,6 +84,71 @@ export function createInitialState() {
     premiumPurchases: 0,
     activity: []
   };
+}
+
+function makeWalletAddress() {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let address = "G";
+  for (let index = 0; index < 55; index += 1) {
+    address += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return address;
+}
+
+export function registerUser(state, email, nickname) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const cleanNickname = String(nickname || "").trim().slice(0, 18);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return { state, ok: false, message: "Escribe un correo válido." };
+  }
+  if (cleanNickname.length < 2) {
+    return { state, ok: false, message: "El nickname debe tener al menos dos caracteres." };
+  }
+  const next = structuredClone(state);
+  next.profile = { email: cleanEmail, nickname: cleanNickname };
+  next.wallet.address = makeWalletAddress();
+  next.onboardingStep = 2;
+  return { state: next, ok: true, message: "Cuenta y wallet creadas." };
+}
+
+export function topUpWallet(state, amount) {
+  const value = Number(amount);
+  if (!Number.isFinite(value) || value < 10 || value > 500) {
+    return { state, ok: false, message: "La carga demo debe estar entre 10 y 500 USDC." };
+  }
+  const next = structuredClone(state);
+  next.wallet.balance = Number((next.wallet.balance + value).toFixed(2));
+  next.onboardingStep = Math.max(next.onboardingStep, 3);
+  next.activity.unshift({
+    id: `activity-${Date.now()}`,
+    day: next.savings.currentDay,
+    text: `Cargaste ${value.toFixed(2)} USDC en tu wallet demo.`
+  });
+  return { state: next, ok: true, message: `Wallet cargada con ${value.toFixed(2)} USDC.` };
+}
+
+export function activateSavings(state, amount = 50) {
+  const value = Number(amount);
+  if (state.savings.status === "active") {
+    return { state, ok: false, message: "Ya tienes una meta de ahorro activa." };
+  }
+  if (!Number.isFinite(value) || value < 10) {
+    return { state, ok: false, message: "La meta mínima es de 10 USDC." };
+  }
+  if (state.wallet.balance < value) {
+    return { state, ok: false, message: "No tienes suficiente saldo en tu wallet." };
+  }
+  const next = structuredClone(state);
+  next.wallet.balance = Number((next.wallet.balance - value).toFixed(2));
+  next.savings.principal = value;
+  next.savings.currentDay = 1;
+  next.savings.status = "active";
+  next.activity.unshift({
+    id: `activity-${Date.now()}`,
+    day: 1,
+    text: `Activaste una meta de ${value.toFixed(2)} USDC por 30 días.`
+  });
+  return { state: next, ok: true, message: "Meta de ahorro activada." };
 }
 
 export function makePet(speciesId, currentDay = 1, customName) {
@@ -104,6 +179,9 @@ export function canAdopt(state, speciesId, premiumConfirmed = false) {
   if (SPECIES[speciesId].type === "premium" && !premiumConfirmed) {
     return { ok: false, message: "Confirma la compra demo de 3 USDC." };
   }
+  if (SPECIES[speciesId].type === "premium" && state.wallet.balance < SPECIES[speciesId].price) {
+    return { ok: false, message: "Necesitas al menos 3 USDC en tu wallet." };
+  }
   return { ok: true };
 }
 
@@ -117,7 +195,10 @@ export function adoptPet(state, speciesId, options = {}) {
   next.pets.push(pet);
   next.selectedPetId = pet.id;
   next.food = Math.max(next.food, 2);
-  if (isPremium) next.premiumPurchases += 1;
+  if (isPremium) {
+    next.premiumPurchases += 1;
+    next.wallet.balance = Number((next.wallet.balance - SPECIES[speciesId].price).toFixed(2));
+  }
   next.activity.unshift({
     id: `activity-${Date.now()}`,
     day: next.savings.currentDay,

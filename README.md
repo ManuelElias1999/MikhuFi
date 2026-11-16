@@ -1,25 +1,38 @@
 # MikhuFi
 
-MVP web de ahorro gamificado inspirado en fauna boliviana. El usuario inicia una meta de ahorro simulada, adopta compañeros, los alimenta sin micropagos y acompaña todo su ciclo de vida.
+MVP web de ahorro gamificado inspirado en fauna boliviana. El usuario crea una cuenta, recibe una wallet demo, carga USDC simulados y acompaña a un animal durante todo su ciclo de vida.
 
-## Alcance de esta versión
+## Flujo del MVP
+
+1. Registro con correo y nickname.
+2. Creación automática de una wallet Stellar simulada.
+3. Carga de 10, 50 o 100 USDC de prueba.
+4. Elección entre un compañero gratuito aleatorio o el Gato Ticayo premium por 3 USDC.
+5. Tutorial del primer día.
+6. Activación opcional de una meta de ahorro de 30 días.
+7. Rutina diaria: alimentar gratis, explorar y terminar el día.
+
+## Funciones
 
 - Jukumari y llama gratuitos.
-- Gato Ticayo premium (compra simulada de 3 USDC).
+- Gato Ticayo premium con descuento real sobre el saldo demo.
 - Hasta seis animales activos a la vez.
 - Cinco etapas: bebé, joven, adulto, maduro y anciano.
-- Alimentación diaria gratuita, juego, salud, envejecimiento y muerte.
-- Jardín de alimentos que se repone cada día según la cantidad de mascotas.
-- Memorial para conservar el recuerdo de los animales fallecidos.
-- Meta simulada de 50 USDC durante 30 días.
+- Alimentación diaria gratuita, ánimo, salud, envejecimiento y muerte.
+- Huerta que repone comida según la cantidad de mascotas.
+- Memorial para los animales fallecidos.
+- Wallet, saldo, cargas y meta de ahorro simulados.
 - Persistencia local en el navegador.
-- Sin Pollar, Trustless Work, wallet ni movimientos de dinero reales.
+- Interfaz responsive con ilustraciones propias.
+- Sin Pollar, Trustless Work ni movimientos reales de dinero.
 
 ## Ejecutar
 
 Requiere Node.js 18 o superior.
 
 ```bash
+git clone https://github.com/ManuelElias1999/MikhuFi.git
+cd MikhuFi
 npm run dev
 ```
 
@@ -28,9 +41,10 @@ Abre [http://localhost:4173](http://localhost:4173).
 ## Verificar
 
 ```bash
+npm run check
 npm test
 ```
 
-## Nota del MVP
+## Nota
 
-Los saldos, rendimientos y compras son demostrativos. La integración con Stellar, autenticación y pagos reales corresponde a una siguiente fase, una vez validada la experiencia de cuidado y colección.
+El registro, la dirección Stellar, el saldo, los rendimientos y las compras son demostrativos. La autenticación, wallet real, contratos y pagos en Stellar corresponden a la siguiente fase.

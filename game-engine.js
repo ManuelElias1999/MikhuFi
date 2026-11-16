@@ -68,7 +68,7 @@ export function createInitialState() {
     wallet: {
       address: "",
       balance: 0,
-      network: "Stellar Testnet (simulada)"
+      network: "Stellar"
     },
     savings: {
       principal: 0,
@@ -114,7 +114,7 @@ export function registerUser(state, email, nickname) {
 export function topUpWallet(state, amount) {
   const value = Number(amount);
   if (!Number.isFinite(value) || value < 10 || value > 500) {
-    return { state, ok: false, message: "La carga demo debe estar entre 10 y 500 USDC." };
+    return { state, ok: false, message: "La carga debe estar entre 10 y 500 USDC." };
   }
   const next = structuredClone(state);
   next.wallet.balance = Number((next.wallet.balance + value).toFixed(2));
@@ -122,7 +122,7 @@ export function topUpWallet(state, amount) {
   next.activity.unshift({
     id: `activity-${Date.now()}`,
     day: next.savings.currentDay,
-    text: `Cargaste ${value.toFixed(2)} USDC en tu wallet demo.`
+    text: `Cargaste ${value.toFixed(2)} USDC en tu wallet.`
   });
   return { state: next, ok: true, message: `Wallet cargada con ${value.toFixed(2)} USDC.` };
 }
@@ -177,7 +177,7 @@ export function canAdopt(state, speciesId, premiumConfirmed = false) {
     return { ok: false, message: "Tu refugio admite hasta seis compañeros activos." };
   }
   if (SPECIES[speciesId].type === "premium" && !premiumConfirmed) {
-    return { ok: false, message: "Confirma la compra demo de 3 USDC." };
+    return { ok: false, message: "Confirma la compra de 3 USDC." };
   }
   if (SPECIES[speciesId].type === "premium" && state.wallet.balance < SPECIES[speciesId].price) {
     return { ok: false, message: "Necesitas al menos 3 USDC en tu wallet." };

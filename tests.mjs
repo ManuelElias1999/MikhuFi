@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createInitialState,
+  TERM_OPTIONS,
   registerUser,
   topUpWallet,
   setPendingGoal,
@@ -49,6 +50,14 @@ test("el usuario define monto y plazo antes de elegir animal", function () {
   assert.deepEqual(goal.state.pendingGoal, { amount: 50, months: 3, speciesId: null });
   assert.equal(goal.state.onboardingStep, 3);
   assert.ok(getProjectedYield(50, 3) > 0);
+});
+
+test("todos los plazos usan la misma tasa anual y muestran el rendimiento proporcional", function () {
+  assert.deepEqual(Object.values(TERM_OPTIONS).map(term => term.apy), [0.07, 0.07, 0.07, 0.07]);
+  assert.equal(Number(getProjectedYield(100, 1).toFixed(2)), 0.58);
+  assert.equal(Number(getProjectedYield(100, 3).toFixed(2)), 1.73);
+  assert.equal(Number(getProjectedYield(100, 6).toFixed(2)), 3.45);
+  assert.equal(Number(getProjectedYield(100, 12).toFixed(2)), 7);
 });
 
 test("el animal se elige antes de mostrar la wallet de depósito", function () {

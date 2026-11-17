@@ -18,6 +18,24 @@ let draftAmount = Number(state.pendingGoal.amount) || 50;
 let draftMonths = Number(state.pendingGoal.months) || 1;
 let newGoal = { amount: 50, months: 1, speciesId: "jukumari", deposit: false };
 let modal = null;
+const TOUR_STEPS = [
+  {
+    title: "Este es tu mundo",
+    text: "Aquí ves a tu animal, cuánto vale tu meta hoy, su etapa de vida y cuánto falta para terminar el plazo."
+  },
+  {
+    title: "Cuídalo cada día",
+    text: "Alimentar es gratis y explorar mejora su ánimo. Cuando termines, avanza al día siguiente para verlo crecer."
+  },
+  {
+    title: "Revisa tu dinero",
+    text: "Este resumen muestra cuánto tienes separado en metas y cuánto permanece disponible en tu wallet."
+  },
+  {
+    title: "Crea otra meta",
+    text: "Cada nueva meta crea otro animal con su propio monto y plazo. No modifica las metas que ya tienes."
+  }
+];
 
 function load() {
   try {
@@ -57,6 +75,16 @@ function brand(extra = "") {
 function habitat(id) { return "assets/habitat-" + id + ".svg"; }
 function shortAddress(value) { return value ? value.slice(0, 7) + "…" + value.slice(-6) : "Sin wallet"; }
 function termName(months) { return TERM_OPTIONS[months]?.label || months + " meses"; }
+function periodRate(months) {
+  const term = TERM_OPTIONS[months];
+  return term ? term.apy * (term.days / 365) * 100 : 0;
+}
+function tutorialActive() {
+  return state.onboarded && state.view === "home" && !state.tutorialSeen;
+}
+function tutorialFocus(step) {
+  return tutorialActive() && Number(state.tutorialStep || 0) === step ? " tutorial-focus" : "";
+}
 function animalArt(id, stage = "baby", extra = "") {
   const index = Math.max(0, STAGES.findIndex(item => item.id === stage));
   const scale = [0.72, 0.84, 1, 1.08, 1.02][index] || 1;
@@ -106,7 +134,7 @@ function landing() {
     "<div class=\"preview-world\" style=\"background-image:url('assets/habitat-jukumari.svg')\">" +
     "<div class=\"preview-balance\"><small>MI META</small><b>$50,16</b><span>12 días seguidos</span></div>" +
     animalArt("jukumari", "young", "preview-pet") +
-    "<div class=\"floating-chip chip-one\">+1 día</div><div class=\"floating-chip chip-two\">4% APY</div>" +
+    "<div class=\"floating-chip chip-one\">+1 día</div><div class=\"floating-chip chip-two\">7% anual est.</div>" +
     "</div></div></div></div><div class=\"hero-sticker\">AHORRA<br>● CUIDA ●<br>CRECE</div></div></section>" +
     "<section class=\"ticker\"><span>MIKHUFI</span><b>●</b><span>AHORRA</span><b>●</b><span>CUIDA</span><b>●</b><span>CRECE</span><b>●</b><span>REPITE</span></section>" +
     "<section class=\"landing-section how-section\" id=\"how\"><div class=\"section-intro\"><span>Así de simple</span>" +
@@ -117,8 +145,9 @@ function landing() {
     "</div></section>" +
     "<section class=\"landing-section returns-section\" id=\"returns\"><div><span class=\"eyebrow\">Mira antes de elegir</span>" +
     "<h2>Tu dinero, explicado<br>sin letra pequeña.</h2><p>Escribe un monto y MikhuFi te muestra la proyección de cada plazo.</p></div>" +
-    "<div class=\"return-board\"><div><small>1 MES</small><b>4%</b><span>APY</span></div><div><small>3 MESES</small><b>5%</b><span>APY</span></div>" +
-    "<div><small>6 MESES</small><b>6%</b><span>APY</span></div><div><small>12 MESES</small><b>7%</b><span>APY</span></div></div></section>" +
+    "<div class=\"return-board\"><div><small>1 MES</small><b>0,58%</b><span>en el plazo</span></div><div><small>3 MESES</small><b>1,73%</b><span>en el plazo</span></div>" +
+    "<div><small>6 MESES</small><b>3,45%</b><span>en el plazo</span></div><div><small>12 MESES</small><b>7,00%</b><span>en el plazo</span></div>" +
+    "<p class=\"rate-note\">Ejemplo con una tasa anual estimada de 7%. La tasa real del protocolo puede variar.</p></div></section>" +
     "<section class=\"final-cta\"><div>" + brand("light") + "<h2>Tu primera meta<br>empieza aquí.</h2><p>Crea tu cuenta, compara y conoce a tu compañero.</p></div>" +
     "<button class=\"pill-button lime big\" data-start>Comenzar ahora →</button></section></main>" +
     "<footer class=\"landing-footer\"><span>MikhuFi · MVP sobre Stellar</span><span>Rendimientos estimados.</span></footer></div>";
@@ -128,7 +157,10 @@ function stepper(step) {
   return "<div class=\"stepper\">" + ["Cuenta", "Plan", "Animal", "Depósito"].map((label, index) => {
     const number = index + 1;
     const status = number < step ? "done" : number === step ? "active" : "";
-    return "<div class=\"" + status + "\"><b>" + (number < step ? "✓" : number) + "</b><span>" + label + "</span></div>";
+    const target = number < step ? " data-go-step=\"" + number + "\"" : "";
+    return "<button type=\"button\" class=\"" + status + "\"" + target +
+      (number < step ? " aria-label=\"Volver al paso " + number + ": " + label + "\"" : "") +
+      "><b>" + (number < step ? "✓" : number) + "</b><span>" + label + "</span></button>";
   }).join("") + "</div>";
 }
 function termChoices(amount, selected, mode = "wizard") {
@@ -136,16 +168,17 @@ function termChoices(amount, selected, mode = "wizard") {
     const gain = getProjectedYield(amount, term.months);
     return "<button type=\"button\" class=\"term-choice " + (selected === term.months ? "selected" : "") +
       "\" data-term=\"" + term.months + "\" data-mode=\"" + mode + "\"><span><strong>" + term.label +
-      "</strong><small>" + money(term.apy * 100, 0) + "% APY</small></span><span class=\"term-return\"><small>Ganarías</small>" +
+      "</strong><small>7% anual estimado</small></span><span class=\"term-return\"><small>Ganarías</small>" +
       "<b data-yield-months=\"" + term.months + "\">+" + money(gain) + "</b></span>" +
-      "<em data-total-months=\"" + term.months + "\">Total " + money(amount + gain) + " USDC</em></button>";
+      "<em><span>≈" + money(periodRate(term.months), 2) + "% en este plazo</span><span data-total-months=\"" +
+      term.months + "\">Total " + money(amount + gain) + " USDC</span></em></button>";
   }).join("");
 }
 function wizardStep(step) {
   if (step === 1) {
     return "<div class=\"wizard-copy\"><span>Paso 1</span><h1>Crea tu espacio.</h1><p>Estos datos preparan tu wallet de prueba.</p></div>" +
-      "<form id=\"register-form\" class=\"clean-form\"><label>Correo electrónico<input name=\"email\" type=\"email\" required placeholder=\"tu@correo.com\"></label>" +
-      "<label>¿Cómo quieres que te llamemos?<input name=\"nickname\" required minlength=\"2\" maxlength=\"18\" placeholder=\"Tu nickname\"></label>" +
+      "<form id=\"register-form\" class=\"clean-form\"><label>Correo electrónico<input name=\"email\" type=\"email\" required placeholder=\"tu@correo.com\" value=\"" + clean(state.profile.email) + "\"></label>" +
+      "<label>¿Cómo quieres que te llamemos?<input name=\"nickname\" required minlength=\"2\" maxlength=\"18\" placeholder=\"Tu nickname\" value=\"" + clean(state.profile.nickname) + "\"></label>" +
       "<button class=\"wide-action\" type=\"submit\">Continuar <span>→</span></button></form>";
   }
   if (step === 2) {
@@ -153,7 +186,7 @@ function wizardStep(step) {
       "<div class=\"amount-field\"><label for=\"plan-amount\">Tu monto</label><div><input id=\"plan-amount\" type=\"number\" min=\"10\" max=\"5000\" value=\"" +
       draftAmount + "\"><span>USDC</span></div><small>Mínimo 10 USDC</small></div><div class=\"term-grid\">" +
       termChoices(draftAmount, draftMonths) + "</div><button class=\"wide-action\" data-save-plan>Elegir " +
-      termName(draftMonths) + " <span>→</span></button><p class=\"fine-print\">Proyecciones estimadas. Las tasas pueden cambiar.</p>";
+      termName(draftMonths) + " <span>→</span></button><p class=\"fine-print\">Usamos 7% anual como referencia del MVP. La tasa real puede cambiar.</p>";
   }
   if (step === 3) {
     return "<div class=\"wizard-copy\"><span>Paso 3</span><h1>Elige a tu compañero.</h1><p>Vivirá durante " +
@@ -183,7 +216,8 @@ function wizard() {
     "<main><aside class=\"wizard-visual species-" + id + "\" style=\"background-image:url('" + habitat(id) + "')\">" +
     "<div class=\"visual-message\"><span>MIKHUFI</span><h2>Una meta.<br>Una vida.</h2><p>Todo se entiende antes de depositar.</p></div>" +
     animalArt(id, "baby", "wizard-pet") + "</aside><section class=\"wizard-panel\">" + stepper(step) +
-    "<div class=\"wizard-body\">" + wizardStep(step) + "</div></section></main></div>";
+    "<div class=\"wizard-body\">" + (step > 1 ? "<button class=\"step-back\" data-prev-step>← Paso anterior</button>" : "") +
+    wizardStep(step) + "</div></section></main></div>";
 }
 
 function sidebar() {
@@ -199,7 +233,7 @@ function worldCard(pet) {
   const position = positionForPet(pet);
   const stage = getStage(position.elapsedDays, position.durationDays);
   const progress = Math.round(position.elapsedDays / position.durationDays * 100);
-  return "<article class=\"world-card species-" + pet.speciesId + "\" style=\"background-image:url('" +
+  return "<article class=\"world-card species-" + pet.speciesId + tutorialFocus(0) + "\" style=\"background-image:url('" +
     habitat(pet.speciesId) + "')\"><div class=\"world-top\"><div><span>MI MUNDO · " +
     SPECIES[pet.speciesId].habitat.toUpperCase() + "</span><h2>" + clean(pet.name) +
     "</h2></div><button data-rename=\"" + pet.id + "\">✎</button></div><div class=\"world-balance\"><small>MI META</small>" +
@@ -213,11 +247,11 @@ function carePanel(pet) {
   if (!pet) return "";
   const position = positionForPet(pet);
   if (pet.completed && position.status === "matured") {
-    return "<article class=\"care-panel complete\"><div><span>META COMPLETADA</span><h3>¡" + clean(pet.name) +
+    return "<article class=\"care-panel complete" + tutorialFocus(1) + "\"><div><span>META COMPLETADA</span><h3>¡" + clean(pet.name) +
       " llegó!</h3><p>Ya puedes retirar capital más rendimiento.</p></div><button class=\"pill-button lime\" data-withdraw=\"" +
       position.id + "\">Retirar</button></article>";
   }
-  return "<article class=\"care-panel\"><div class=\"care-heading\"><div><span>RUTINA DE HOY</span><h3>" +
+  return "<article class=\"care-panel" + tutorialFocus(1) + "\"><div class=\"care-heading\"><div><span>RUTINA DE HOY</span><h3>" +
     getPetMood(pet) + "</h3></div><b>" + state.food + " raciones</b></div><div class=\"care-actions\">" +
     "<button data-feed=\"" + pet.id + "\" " + (pet.fedToday ? "disabled" : "") + "><b>♨</b><span>" +
     (pet.fedToday ? "Ya comió" : "Alimentar") + "</span><small>Gratis</small></button><button data-play=\"" +
@@ -230,8 +264,8 @@ function homeView() {
   const locked = state.positions.filter(item => item.status !== "withdrawn");
   return "<section class=\"app-content\"><div class=\"dashboard-heading\"><div><span>DÍA " + state.clockDay +
     "</span><h1>Hola, " + clean(state.profile.nickname) + ".</h1><p>Tu mundo sigue creciendo.</p></div>" +
-    "<button class=\"pill-button dark\" data-view=\"store\">+ Nueva meta</button></div><div class=\"dashboard-grid\"><div>" +
-    worldCard(pet) + carePanel(pet) + "</div><aside><article class=\"mini-card portfolio-mini\"><div class=\"mini-title\">" +
+    "<button class=\"pill-button dark" + tutorialFocus(3) + "\" data-view=\"store\">+ Nueva meta</button></div><div class=\"dashboard-grid\"><div>" +
+    worldCard(pet) + carePanel(pet) + "</div><aside><article class=\"mini-card portfolio-mini" + tutorialFocus(2) + "\"><div class=\"mini-title\">" +
     "<span>PORTAFOLIO</span><button data-view=\"savings\">Ver todo →</button></div><strong>" +
     money(getLockedTotal(state)) + " <small>USDC</small></strong><p>" + locked.length + " metas activas</p>" +
     "<div class=\"portfolio-bars\"><i></i><i></i><i></i></div><footer><span>Wallet</span><b>" +
@@ -315,12 +349,25 @@ function modalHtml() {
     "<h2>¿Cómo se llamará?</h2><input id=\"rename-input\" maxlength=\"18\" value=\"" + clean(pet?.name || "") +
     "\"><button class=\"wide-action\" data-save-name=\"" + modal.petId + "\">Guardar</button></div></div>";
 }
+function tutorialOverlay() {
+  if (!tutorialActive()) return "";
+  const index = Math.min(TOUR_STEPS.length - 1, Math.max(0, Number(state.tutorialStep || 0)));
+  const item = TOUR_STEPS[index];
+  return "<div class=\"tour-backdrop\" aria-hidden=\"true\"></div><section class=\"tour-card\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"tour-title\">" +
+    "<button class=\"tour-skip\" data-tutorial-skip>Saltar explicación</button><span>PASO " + (index + 1) + " DE " + TOUR_STEPS.length + "</span>" +
+    "<h2 id=\"tour-title\">" + item.title + "</h2><p>" + item.text + "</p><div class=\"tour-progress\">" +
+    TOUR_STEPS.map((_, step) => "<i class=\"" + (step <= index ? "done" : "") + "\"></i>").join("") +
+    "</div><footer>" + (index > 0 ? "<button class=\"tour-previous\" data-tutorial-prev>← Anterior</button>" : "<span></span>") +
+    "<button class=\"tour-next\" data-tutorial-next>" + (index === TOUR_STEPS.length - 1 ? "Terminar" : "Siguiente →") +
+    "</button></footer></section>";
+}
 function dashboard() {
   const view = state.view === "savings" ? savingsView() : state.view === "store" ? newGoalView() :
     state.view === "memorial" ? memorialView() : homeView();
   return "<div class=\"app-shell\">" + sidebar() + "<main class=\"app-main\"><header class=\"app-topbar\">" +
-    "<button data-mobile-menu>☰</button><span>Stellar · USDC</span><div><small>Wallet</small><b>" +
-    shortAddress(state.wallet.address) + "</b></div></header>" + view + "</main></div>" + modalHtml();
+    "<button class=\"mobile-menu-button\" data-mobile-menu>☰</button><span>Stellar · USDC</span>" +
+    "<button class=\"help-button\" data-restart-tutorial>? Ver guía</button><div><small>Wallet</small><b>" +
+    shortAddress(state.wallet.address) + "</b></div></header>" + view + "</main></div>" + modalHtml() + tutorialOverlay();
 }
 function render() {
   app.innerHTML = state.onboarded ? dashboard() : state.entryStarted ? wizard() : landing();
@@ -332,6 +379,14 @@ function refreshNumbers(amount, scope) {
   scope.querySelectorAll("[data-total-months]").forEach(element => {
     const months = Number(element.dataset.totalMonths);
     element.textContent = "Total " + money(amount + getProjectedYield(amount, months)) + " USDC";
+  });
+}
+function moveTutorial(step) {
+  const next = structuredClone(state);
+  next.tutorialStep = step;
+  setState(next);
+  requestAnimationFrame(() => {
+    document.querySelector(".tutorial-focus")?.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 }
 
@@ -360,6 +415,34 @@ app.addEventListener("click", event => {
   if (button.dataset.scroll) { document.querySelector("#" + button.dataset.scroll)?.scrollIntoView({ behavior: "smooth" }); return; }
   if (button.hasAttribute("data-back-landing")) {
     const next = structuredClone(state); next.entryStarted = false; setState(next); return;
+  }
+  if (button.hasAttribute("data-prev-step")) {
+    const next = structuredClone(state);
+    next.onboardingStep = Math.max(1, Number(next.onboardingStep || 1) - 1);
+    setState(next); return;
+  }
+  if (button.dataset.goStep) {
+    const next = structuredClone(state);
+    next.onboardingStep = Math.max(1, Math.min(Number(button.dataset.goStep), Number(next.onboardingStep || 1)));
+    setState(next); return;
+  }
+  if (button.hasAttribute("data-tutorial-skip")) {
+    const next = structuredClone(state); next.tutorialSeen = true; next.tutorialStep = 0; setState(next); return;
+  }
+  if (button.hasAttribute("data-tutorial-prev")) {
+    moveTutorial(Math.max(0, Number(state.tutorialStep || 0) - 1)); return;
+  }
+  if (button.hasAttribute("data-tutorial-next")) {
+    const current = Number(state.tutorialStep || 0);
+    if (current >= TOUR_STEPS.length - 1) {
+      const next = structuredClone(state); next.tutorialSeen = true; next.tutorialStep = 0; setState(next);
+    } else moveTutorial(current + 1);
+    return;
+  }
+  if (button.hasAttribute("data-restart-tutorial")) {
+    const next = structuredClone(state); next.view = "home"; next.tutorialSeen = false; next.tutorialStep = 0; setState(next);
+    requestAnimationFrame(() => document.querySelector(".tutorial-focus")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    return;
   }
   if (button.dataset.term) {
     if (button.dataset.mode === "new") newGoal.months = Number(button.dataset.term);
@@ -415,6 +498,7 @@ function confirmDeposit(amount, months, speciesId, first) {
   if (!created.ok) { message(created.message, "danger"); return; }
   const next = structuredClone(created.state);
   next.onboarded = true; next.view = "home";
+  if (first) { next.tutorialSeen = false; next.tutorialStep = 0; }
   newGoal = { amount: 50, months: 1, speciesId: "jukumari", deposit: false };
   setState(next);
   message(first ? "Pago confirmado. Tu mundo ya está vivo." : "Nueva meta confirmada.");

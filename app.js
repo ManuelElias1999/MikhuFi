@@ -93,7 +93,7 @@ function art(id, stage, memory) {
   const stageId = stage || "baby";
   const index = Math.max(0, STAGES.findIndex(function (item) { return item.id === stageId; }));
   const scale = [0.72, 0.84, 1, 1.08, 1.02][index] || 1;
-  return "<div class=\"animal stage-" + stageId + (memory ? " memory" : "") +
+  return "<div class=\"animal species-" + id + " stage-" + stageId + (memory ? " memory" : "") +
     "\" style=\"--accent:" + SPECIES[id].palette[2] + ";--scale:" + scale + "\"><i></i><b>" +
     icons[id] + "</b>" + (stageId === "old" ? "<em>✦</em>" : "") +
     (memory ? "<strong>★</strong>" : "") + "<span></span></div>";
@@ -139,7 +139,7 @@ function petCard(pet) {
   const position = positionForPet(pet);
   const stage = stageForPet(pet);
   const progress = position ? Math.round(position.elapsedDays / position.durationDays * 100) : 0;
-  return "<article class=\"pet-card " + (state.selectedPetId === pet.id ? "selected" : "") +
+  return "<article class=\"pet-card species-card-" + pet.speciesId + " " + (state.selectedPetId === pet.id ? "selected" : "") +
     "\"><button data-select=\"" + pet.id + "\">" + art(pet.speciesId, stage.id) +
     "<span>" + stage.label + "</span><small>" + species.name + "</small><h3>" +
     clean(pet.name) + "</h3><p>" + money(position ? position.principal : 0) +
@@ -184,8 +184,10 @@ function selectedPetPanel() {
       " queda en tu colección.</div>";
   }
 
-  return "<article class=\"spotlight\"><div class=\"spot-art\">" + art(pet.speciesId, stage.id) +
-    "<span>" + species.name + "</span></div><div class=\"spot-copy\"><div class=\"pet-head\"><div><small>" +
+  return "<article class=\"spotlight habitat-panel habitat-" + pet.speciesId + "\"><div class=\"spot-art habitat-scene\">" +
+    "<div class=\"scene-sun\"></div><div class=\"scene-cloud cloud-a\"></div><div class=\"scene-cloud cloud-b\"></div>" +
+    "<div class=\"scene-particles\"></div><div class=\"scene-ground\"></div>" + art(pet.speciesId, stage.id) +
+    "<span class=\"habitat-badge\">" + species.habitat + "</span></div><div class=\"spot-copy\"><div class=\"pet-head\"><div><small>" +
     stage.label + " · " + species.habitat + "</small><h2>" + clean(pet.name) +
     "</h2></div><button data-rename=\"" + pet.id + "\">Editar nombre</button></div><p class=\"mood\"><i></i>" +
     getPetMood(pet) + "</p><div class=\"investment-strip\"><p><span>Inversión</span><b>" +
@@ -242,12 +244,12 @@ function guideCard() {
 
 function homeView() {
   const pets = state.pets;
-  return "<section class=\"content\">" + summaries() + guideCard() +
-    heading("Tu refugio", "Inversiones con vida",
+  return "<section class=\"content home-world\">" + summaries() + selectedPetPanel() + guideCard() +
+    heading("Tu manada", "Cambia de hábitat",
       "<button class=\"button dark\" data-view=\"store\">+ Nueva inversión</button>") +
     (pets.length ? "<div class=\"pet-grid compact\">" + pets.map(petCard).join("") + "</div>" :
       empty("Aún no tienes animales", "Crea una inversión para recibir uno.")) +
-    selectedPetPanel() + "</section>";
+    "</section>";
 }
 
 function termButtons(context) {
@@ -261,7 +263,7 @@ function termButtons(context) {
 function speciesChoice(id) {
   const species = SPECIES[id];
   const premium = species.type === "premium";
-  return "<article class=\"shop-card " + (premium ? "premium" : "") + "\">" +
+  return "<article class=\"shop-card habitat-card habitat-card-" + id + " " + (premium ? "premium" : "") + "\">" +
     art(id, "baby") + "<span>" + (premium ? "Premium · 3 USDC" : "Incluido") + "</span><h3>" +
     species.name + "</h3><p>" + species.description + "</p><button class=\"button " +
     (premium ? "gold" : "light") + "\" data-create=\"" + id + "\">" +
@@ -360,7 +362,9 @@ function mainApp() {
   const body = state.view === "store" ? storeView() :
     state.view === "savings" ? savingsView() :
     state.view === "memorial" ? memorialView() : homeView();
-  return "<div class=\"shell\">" + sidebar() + "<main><header class=\"topbar\"><button data-menu>☰</button><section><h1>" +
+  const activePet = state.pets.find(function (item) { return item.id === state.selectedPetId; }) || state.pets[0];
+  const uiSpecies = activePet ? activePet.speciesId : "jukumari";
+  return "<div class=\"shell habitat-ui habitat-ui-" + uiSpecies + "\">" + sidebar() + "<main><header class=\"topbar\"><button data-menu>☰</button><section><h1>" +
     meta[0] + "</h1><p>" + meta[1] + "</p></section><div><span>" + state.food +
     " raciones</span><b>" + money(state.wallet.balance) + " USDC</b></div></header>" + body +
     "</main></div>" + modalHtml();

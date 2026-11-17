@@ -35,9 +35,9 @@ export const SPECIES = {
 };
 
 export const TERM_OPTIONS = {
-  1: { months: 1, days: 30, apy: 0.04, label: "1 mes" },
-  3: { months: 3, days: 90, apy: 0.05, label: "3 meses" },
-  6: { months: 6, days: 180, apy: 0.06, label: "6 meses" },
+  1: { months: 1, days: 30, apy: 0.07, label: "1 mes" },
+  3: { months: 3, days: 90, apy: 0.07, label: "3 meses" },
+  6: { months: 6, days: 180, apy: 0.07, label: "6 meses" },
   12: { months: 12, days: 365, apy: 0.07, label: "12 meses" }
 };
 
@@ -76,6 +76,8 @@ export function createInitialState() {
     entryStarted: false,
     onboarded: false,
     onboardingStep: 1,
+    tutorialSeen: false,
+    tutorialStep: 0,
     view: "home",
     profile: { email: "", nickname: "" },
     wallet: { address: "", balance: 0, network: "Stellar" },

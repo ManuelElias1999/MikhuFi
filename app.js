@@ -470,7 +470,7 @@ app.addEventListener("submit", function (event) {
 });
 
 app.addEventListener("input", function (event) {
-  if (event.target.id === "goal-amount" || event.target.id === "new-amount") {
+  if (event.target.id === "new-amount") {
     draftAmount = Number(event.target.value) || 0;
   }
 });

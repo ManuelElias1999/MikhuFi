@@ -4,13 +4,14 @@ MVP web de ahorro gamificado inspirado en fauna boliviana. Cada animal represent
 
 ## Flujo del MVP
 
-1. Registro con correo y nickname.
-2. Creación automática de una wallet Stellar de prueba.
-3. Activación automática de 200 USDC simulados, sin pedir un monto al usuario.
-4. Comparación de 1, 3, 6 y 12 meses usando 50 USDC como ejemplo visual.
-5. Elección de un Jukumari o una Llama incluidos, o un Gato Ticayo premium por 3 USDC simulados.
-6. Cuidado gratuito del animal mientras avanza la inversión.
-7. Retiro del capital más el rendimiento estimado cuando vence el plazo.
+1. Dashboard público con explicación del producto y acceso al registro.
+2. Registro con correo y nickname; la wallet Stellar de prueba se crea en segundo plano.
+3. El usuario escribe cualquier monto desde 10 USDC y compara 1, 3, 6 y 12 meses.
+4. Elección de Jukumari, Llama o Gato Ticayo premium por 3 USDC simulados.
+5. Pantalla de depósito con monto exacto, dirección Stellar, QR y botón de copia.
+6. Confirmación simulada del pago y desbloqueo del dashboard de cuidado.
+7. Alimentación, exploración, avance diario y seguimiento de cada meta.
+8. Retiro del capital más el rendimiento estimado cuando vence el plazo.
 
 ## Modelo de producto
 
@@ -34,6 +35,8 @@ MVP web de ahorro gamificado inspirado en fauna boliviana. Cada animal represent
 - Wallet, cargas y saldos simulados.
 - Alimentación, exploración, salud, cinco etapas y memorial.
 - Persistencia local en el navegador.
+- Portada fintech y dashboard inspirados en productos de ahorro gamificado, con identidad propia.
+- Proceso guiado de cuatro pasos: cuenta, plan, animal y depósito.
 - Identidad visual propia, logo y tres hábitats vectoriales animados.
 - Bosque nublado para el Jukumari, altiplano para la Llama y valle rocoso para el Ticayo.
 - Interfaz responsive que cambia de atmósfera según el animal seleccionado.

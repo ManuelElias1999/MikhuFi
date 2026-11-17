@@ -50,7 +50,7 @@ export const STAGES = [
 ];
 
 export const MAX_ACTIVE_PETS = 6;
-export const STORAGE_KEY = "mikhufi-mvp-v3";
+export const STORAGE_KEY = "mikhufi-mvp-v4";
 
 export function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
@@ -72,13 +72,14 @@ export function progressToNextStage(elapsedDays, durationDays = 30) {
 
 export function createInitialState() {
   return {
-    version: 3,
+    version: 4,
+    entryStarted: false,
     onboarded: false,
     onboardingStep: 1,
     view: "home",
     profile: { email: "", nickname: "" },
     wallet: { address: "", balance: 0, network: "Stellar" },
-    pendingGoal: { amount: 50, months: 1 },
+    pendingGoal: { amount: 50, months: 1, speciesId: null },
     clockDay: 1,
     food: 3,
     positions: [],
@@ -129,8 +130,8 @@ export function registerUser(state, email, nickname) {
 
 export function topUpWallet(state, amount) {
   const value = Number(amount);
-  if (!Number.isFinite(value) || value < 10 || value > 500) {
-    return { state: state, ok: false, message: "La carga debe estar entre 10 y 500 USDC." };
+  if (!Number.isFinite(value) || value < 10 || value > 5000) {
+    return { state: state, ok: false, message: "La carga debe estar entre 10 y 5000 USDC." };
   }
   const next = structuredClone(state);
   next.wallet.balance = Number((next.wallet.balance + value).toFixed(2));
@@ -154,12 +155,20 @@ export function setPendingGoal(state, amount, months) {
   if (!term) {
     return { state: state, ok: false, message: "Elige un plazo válido." };
   }
-  if (state.wallet.balance < value) {
-    return { state: state, ok: false, message: "No tienes suficiente saldo disponible." };
+  const next = structuredClone(state);
+  next.pendingGoal = { amount: value, months: Number(months), speciesId: null };
+  next.onboardingStep = 3;
+  return { state: next, ok: true };
+}
+
+export function selectPendingSpecies(state, speciesId) {
+  const species = SPECIES[speciesId];
+  if (!species) {
+    return { state: state, ok: false, message: "Elige un animal válido." };
   }
   const next = structuredClone(state);
-  next.pendingGoal = { amount: value, months: Number(months) };
-  next.onboardingStep = Math.max(next.onboardingStep, 4);
+  next.pendingGoal.speciesId = speciesId;
+  next.onboardingStep = 4;
   return { state: next, ok: true };
 }
 
@@ -229,7 +238,7 @@ export function createPosition(state, options) {
   next.pets.push(pet);
   next.selectedPetId = pet.id;
   next.food = Math.max(next.food, 3);
-  next.onboardingStep = Math.max(next.onboardingStep, 5);
+  next.onboardingStep = Math.max(next.onboardingStep, 4);
   if (species.type === "premium") next.premiumPurchases += 1;
   activity(next, pet.name + " comenzó una meta de " + amount.toFixed(2) + " USDC por " + term.label + ".");
   return { state: next, ok: true, pet: pet, position: position, message: "Inversión y compañero creados." };

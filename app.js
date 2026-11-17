@@ -33,7 +33,7 @@ const icons = {
 };
 
 let state = load();
-let selectedTopUp = 100;
+let selectedTopUp = 200;
 let draftAmount = Number(state.pendingGoal && state.pendingGoal.amount) || 50;
 let draftMonths = Number(state.pendingGoal && state.pendingGoal.months) || 1;
 let modal = null;
@@ -86,7 +86,7 @@ function shortAddress(value) {
 }
 
 function mark() {
-  return "<span class=\"flag\"><i></i><i></i><i></i></span>";
+  return "<span class=\"mikhufi-mark\"><img src=\"assets/mikhufi-logo.svg\" alt=\"\"></span>";
 }
 
 function art(id, stage, memory) {
@@ -254,9 +254,10 @@ function homeView() {
 
 function termButtons(context) {
   return Object.values(TERM_OPTIONS).map(function (term) {
+    const example = context === "onboarding" ? "<em>+" + money(getProjectedYield(50, term.months)) + " USDC</em>" : "";
     return "<button type=\"button\" class=\"" + (draftMonths === term.months ? "active" : "") +
       "\" data-term=\"" + term.months + "\" data-context=\"" + context + "\"><strong>" +
-      term.label + "</strong><small>" + money(term.apy * 100, 0) + "% APY</small></button>";
+      term.label + "</strong><small>" + money(term.apy * 100, 0) + "% APY</small>" + example + "</button>";
   }).join("");
 }
 
@@ -388,23 +389,20 @@ function onboardingStep(step) {
       "<button class=\"button primary full\" type=\"submit\">Crear cuenta y wallet</button></form></section>";
   }
   if (step === 2) {
-    return "<section class=\"picker\"><span>Paso 2 de 5</span><h2>Carga tu wallet</h2><p>En este MVP el saldo es simulado y sirve para probar el flujo.</p>" +
+    return "<section class=\"picker\"><span>Paso 2 de 5</span><h2>Tu espacio de prueba está listo</h2><p>No necesitas decidir cuánto invertir todavía. Para explorar el MVP recibirás un saldo completamente simulado.</p>" +
       "<div class=\"wallet-created\"><small>Tu wallet Stellar</small><strong>" + shortAddress(state.wallet.address) +
-      "</strong><button data-copy-wallet>Copiar dirección</button></div><h3>¿Cuánto quieres cargar?</h3><div class=\"amounts\">" +
-      [50, 100, 200].map(function (value) {
-        return "<button class=\"" + (selectedTopUp === value ? "active" : "") + "\" data-topup-choice=\"" +
-          value + "\">" + value + " USDC</button>";
-      }).join("") + "</div><button class=\"button primary full\" data-onboarding-fund>Cargar " +
-      selectedTopUp + " USDC</button></section>";
+      "</strong><button data-copy-wallet>Copiar dirección</button></div><div class=\"starter-balance\"><span>Saldo para explorar</span><strong>200 USDC</strong><p>No representa dinero real ni una inversión.</p></div>" +
+      "<button class=\"button primary full\" data-onboarding-fund>Activar saldo de prueba</button></section>";
   }
   if (step === 3) {
-    return "<section class=\"picker\"><span>Paso 3 de 5</span><h2>Define tu primera meta</h2><p>El monto quedará bloqueado durante el plazo elegido.</p>" +
-      "<label>Monto en USDC<input id=\"goal-amount\" type=\"number\" min=\"10\" max=\"" +
-      state.wallet.balance + "\" value=\"" + draftAmount + "\"></label><div class=\"term-options onboarding-terms\">" +
-      termButtons("onboarding") + "</div><div class=\"projection-box\"><span>Ganancia estimada</span><strong>" +
-      money(getProjectedYield(draftAmount, draftMonths)) + " USDC</strong><p>" +
-      projectedCopy(draftAmount, draftMonths) + "</p></div><button class=\"button primary full\" data-save-goal>Continuar</button>" +
-      "<small>Tasa anual estimada para validar el MVP; no es una garantía.</small></section>";
+    return "<section class=\"picker compare-step\"><span>Paso 3 de 5</span><h2>Compara cómo crecería</h2><p>Para entender los plazos usaremos un ejemplo fijo de <strong>50 USDC</strong>. El monto real se definirá cuando integremos las reglas del evento.</p>" +
+      "<div class=\"example-amount\"><span>Ejemplo de inversión</span><strong>50 USDC</strong><small>Selecciona un plazo para comparar</small></div>" +
+      "<div class=\"term-options onboarding-terms\">" + termButtons("onboarding") +
+      "</div><div class=\"projection-box\"><span>Ganancia aproximada en " + termLabel(draftMonths) + "</span><strong>+" +
+      money(getProjectedYield(50, draftMonths)) + " USDC</strong><p>Al final verías aproximadamente " +
+      money(50 + getProjectedYield(50, draftMonths)) + " USDC. Es una simulación visual con APY estimado.</p></div>" +
+      "<button class=\"button primary full\" data-save-goal>Elegir este plazo</button>" +
+      "<small>Las tasas y el monto final se ajustarán después de revisar las condiciones del evento.</small></section>";
   }
   if (step === 4) {
     const amount = state.pendingGoal.amount;
@@ -497,8 +495,8 @@ app.addEventListener("click", function (event) {
     return;
   }
   if (button.hasAttribute("data-save-goal")) {
-    readDraftAmount("#goal-amount");
-    resultAction(setPendingGoal(state, draftAmount, draftMonths));
+    draftAmount = 50;
+    resultAction(setPendingGoal(state, 50, draftMonths));
     return;
   }
   if (button.dataset.firstPet) {
@@ -613,7 +611,7 @@ app.addEventListener("click", function (event) {
     state = createInitialState();
     draftAmount = 50;
     draftMonths = 1;
-    selectedTopUp = 100;
+    selectedTopUp = 200;
     save();
     render();
   }

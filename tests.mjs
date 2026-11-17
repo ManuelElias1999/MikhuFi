@@ -5,6 +5,7 @@ import {
   registerUser,
   topUpWallet,
   setPendingGoal,
+  selectPendingSpecies,
   createPosition,
   feedPet,
   advanceDay,
@@ -32,10 +33,10 @@ function position(state, amount = 50, months = 1, speciesId = "jukumari") {
   });
 }
 
-test("el registro crea perfil, wallet y estado v3", function () {
+test("el registro crea perfil, wallet y estado v4", function () {
   const result = registerUser(createInitialState(), "manu@example.com", "Manu");
   assert.equal(result.ok, true);
-  assert.equal(result.state.version, 3);
+  assert.equal(result.state.version, 4);
   assert.equal(result.state.profile.nickname, "Manu");
   assert.match(result.state.wallet.address, /^G[A-Z2-7]{55}$/);
   assert.equal(result.state.onboardingStep, 2);
@@ -45,9 +46,18 @@ test("el usuario define monto y plazo antes de elegir animal", function () {
   const state = fundedState(100);
   const goal = setPendingGoal(state, 50, 3);
   assert.equal(goal.ok, true);
-  assert.deepEqual(goal.state.pendingGoal, { amount: 50, months: 3 });
-  assert.equal(goal.state.onboardingStep, 4);
+  assert.deepEqual(goal.state.pendingGoal, { amount: 50, months: 3, speciesId: null });
+  assert.equal(goal.state.onboardingStep, 3);
   assert.ok(getProjectedYield(50, 3) > 0);
+});
+
+test("el animal se elige antes de mostrar la wallet de depósito", function () {
+  const registered = registerUser(createInitialState(), "manu@example.com", "Manu");
+  const goal = setPendingGoal(registered.state, 80, 6);
+  const animal = selectPendingSpecies(goal.state, "llama");
+  assert.equal(animal.ok, true);
+  assert.equal(animal.state.pendingGoal.speciesId, "llama");
+  assert.equal(animal.state.onboardingStep, 4);
 });
 
 test("cada animal crea una inversión independiente", function () {

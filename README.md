@@ -17,7 +17,8 @@ MVP web de ahorro gamificado inspirado en fauna boliviana. Cada animal represent
 
 - Un animal equivale a una inversión.
 - Crear otra inversión crea otro animal; no modifica las anteriores.
-- Los plazos del MVP usan APY estimado de 4%, 5%, 6% y 7%.
+- Todos los plazos usan una misma tasa anual estimada de 7% para que la comparación sea coherente.
+- La interfaz muestra el rendimiento proporcional de cada plazo: 0.58% a 1 mes, 1.73% a 3 meses, 3.45% a 6 meses y 7% a 12 meses.
 - Las cinco etapas de vida dependen del avance proporcional de cada plazo.
 - La comida proviene de la huerta y nunca descuenta USDC.
 - Tras siete días sin alimento, el animal pasa al memorial.
@@ -37,6 +38,8 @@ MVP web de ahorro gamificado inspirado en fauna boliviana. Cada animal represent
 - Persistencia local en el navegador.
 - Portada fintech y dashboard inspirados en productos de ahorro gamificado, con identidad propia.
 - Proceso guiado de cuatro pasos: cuenta, plan, animal y depósito.
+- Navegación hacia atrás sin perder los datos ya escritos y acceso directo a los pasos completados.
+- Tutorial interactivo dentro del dashboard con enfoque visual, pasos anterior/siguiente, opción para saltarlo y botón para volver a verlo.
 - Identidad visual propia, logo y tres hábitats vectoriales animados.
 - Bosque nublado para el Jukumari, altiplano para la Llama y valle rocoso para el Ticayo.
 - Interfaz responsive que cambia de atmósfera según el animal seleccionado.

@@ -489,7 +489,7 @@ app.addEventListener("click", function (event) {
     return;
   }
   if (button.dataset.term) {
-    readDraftAmount(button.dataset.context === "onboarding" ? "#goal-amount" : "#new-amount");
+    if (button.dataset.context === "store") readDraftAmount("#new-amount");
     draftMonths = Number(button.dataset.term);
     render();
     return;
